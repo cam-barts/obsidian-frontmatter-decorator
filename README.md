@@ -45,7 +45,7 @@ Colors can be specified in any valid CSS color format:
 - Without prefix: `list-todo` (prefix added automatically)
 - Browse at [lucide.dev](https://lucide.dev)
 
-**Phosphor Icons** (requires [Notebook Navigator](https://github.com/drbap/notebook-navigator-obsidian)):
+**Phosphor Icons** (requires [Notebook Navigator](https://github.com/johansan/notebook-navigator)):
 
 - Format: `phosphor:icon-name` (e.g., `phosphor:bridge`)
 - Browse at [phosphoricons.com](https://phosphoricons.com)
@@ -86,7 +86,7 @@ Colors can be specified in any valid CSS color format:
 
 ### Development Installation
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup instructions.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed setup instructions.
 
 Quick start:
 
@@ -131,13 +131,52 @@ This plugin provides similar functionality to Supercharged Links but with a diff
 | CSS generation | None (inline styles) | Auto-generated CSS |
 | Style Settings integration | No | Yes |
 
+## Attribution & Credits
+
+This project was inspired by and built upon the following resources:
+
+### Supercharged Links
+
+- **Source**: <https://github.com/mdelobelle/obsidian_supercharged_links>
+- **Author**: mdelobelle
+- **License**: MIT
+- **Usage**: This plugin provides similar functionality with a different, frontmatter-driven approach
+
+### Obsidian Sample Plugin
+
+- **Source**: <https://github.com/obsidianmd/obsidian-sample-plugin>
+- **Author**: Obsidian Team
+- **License**: MIT
+- **Usage**: Used as the structural template for this plugin
+
+### Notebook Navigator
+
+- **Source**: <https://github.com/johansan/notebook-navigator>
+- **Author**: johansan
+- **Usage**: Optional integration for Phosphor and Simple Icons support via its icon service
+
+### Icon Libraries
+
+This plugin supports icons from the following libraries:
+
+- **Lucide Icons**: <https://lucide.dev> - MIT License
+- **Phosphor Icons**: <https://phosphoricons.com> - MIT License (requires Notebook Navigator)
+- **Simple Icons**: <https://simpleicons.org> - CC0 1.0 Universal (requires Notebook Navigator)
+
+### BRAT
+
+- **Source**: <https://github.com/TfTHacker/obsidian42-brat>
+- **Author**: TfTHacker
+- **License**: MIT
+- **Usage**: Recommended for beta plugin installation
+
 ## License
 
-MIT
+MIT - See [LICENSE](./LICENSE) for details
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+Contributions are welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on:
 
 - Development setup
 - Commit message conventions
@@ -151,3 +190,7 @@ If you find this plugin useful, consider supporting development:
 - Star the repository on GitHub
 - Report bugs and suggest features
 - Contribute code or documentation
+
+---
+
+Built with [Claude Code](https://claude.ai/code)
