@@ -139,7 +139,6 @@ class StyleApplicator {
 		const nn = plugins?.["notebook-navigator"];
 		if (nn) {
 			this.notebookNavigator = nn;
-			console.log("Frontmatter Decorator: Found Notebook Navigator, using its icon provider");
 		}
 		return this.notebookNavigator;
 	}
@@ -150,9 +149,10 @@ class StyleApplicator {
 	applyStyle(element: HTMLElement, filePath: string): void {
 		const style = this.plugin.styleCache.getStyle(filePath);
 
-		// Apply color
+		// Apply color via CSS custom property
 		if (style.color) {
-			element.style.color = style.color;
+			element.style.setProperty("--frontmatter-color", style.color);
+			element.classList.add("has-frontmatter-color");
 			element.dataset.frontmatterColor = style.color;
 		}
 
@@ -170,7 +170,8 @@ class StyleApplicator {
 	 * Remove applied styles from an element
 	 */
 	removeStyle(element: HTMLElement): void {
-		element.style.color = "";
+		element.style.removeProperty("--frontmatter-color");
+		element.classList.remove("has-frontmatter-color");
 		delete element.dataset.frontmatterColor;
 
 		// Remove icon container if we added one
@@ -237,8 +238,8 @@ class StyleApplicator {
 			}
 
 			return false;
-		} catch (error) {
-			console.warn("Frontmatter Decorator: Could not use Notebook Navigator icon provider", error);
+		} catch {
+			// Notebook Navigator icon provider not available, will fall back to Lucide
 			return false;
 		}
 	}
@@ -968,7 +969,8 @@ class EditorLinksObserver extends DOMObserver {
 		if (file instanceof TFile) {
 			const style = this.plugin.styleCache.getStyle(file.path);
 			if (style.color) {
-				linkElement.style.color = style.color;
+				linkElement.style.setProperty("--frontmatter-color", style.color);
+				linkElement.classList.add("has-frontmatter-color");
 			}
 		}
 	}
@@ -1037,16 +1039,12 @@ export default class FrontmatterDecoratorPlugin extends Plugin {
 				this.refreshAllObservers();
 			},
 		});
-
-		console.log("Frontmatter Decorator plugin loaded");
 	}
 
 	onunload(): void {
 		// Stop all observers
 		this.observers.forEach((observer) => observer.stop());
 		this.observers = [];
-
-		console.log("Frontmatter Decorator plugin unloaded");
 	}
 
 	async loadSettings(): Promise<void> {
@@ -1120,7 +1118,6 @@ export default class FrontmatterDecoratorPlugin extends Plugin {
 
 		// Initial refresh to apply styles
 		this.refreshAllObservers();
-		console.log("Frontmatter Decorator: Observers started");
 	}
 
 	private reinitializeObservers(): void {
@@ -1156,11 +1153,7 @@ class FrontmatterDecoratorSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "Frontmatter Decorator Settings" });
-
-		// Frontmatter field settings
-		containerEl.createEl("h3", { text: "Frontmatter Fields" });
-
+		// General settings (frontmatter fields) at top without heading per guidelines
 		new Setting(containerEl)
 			.setName("Color field")
 			.setDesc("The frontmatter field name to use for colors")
@@ -1187,12 +1180,14 @@ class FrontmatterDecoratorSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// Enable/disable settings
-		containerEl.createEl("h3", { text: "Enabled Locations" });
+		// Enabled locations section
+		new Setting(containerEl)
+			.setName("Enabled locations")
+			.setHeading();
 
 		new Setting(containerEl)
-			.setName("File Explorer")
-			.setDesc("Apply styles to files in the File Explorer")
+			.setName("File explorer")
+			.setDesc("Apply styles to files in the file explorer")
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.enableFileExplorer)
@@ -1203,7 +1198,7 @@ class FrontmatterDecoratorSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Tab Headers")
+			.setName("Tab headers")
 			.setDesc("Apply styles to tab headers")
 			.addToggle((toggle) =>
 				toggle
@@ -1215,8 +1210,8 @@ class FrontmatterDecoratorSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Quick Switcher")
-			.setDesc("Apply styles in the Quick Switcher (Ctrl/Cmd+O)")
+			.setName("Quick switcher")
+			.setDesc("Apply styles in the quick switcher (Ctrl/Cmd+O)")
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.enableQuickSwitcher)
@@ -1227,7 +1222,7 @@ class FrontmatterDecoratorSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Link Suggester")
+			.setName("Link suggester")
 			.setDesc("Apply styles in the link suggester when typing [[")
 			.addToggle((toggle) =>
 				toggle
@@ -1239,8 +1234,8 @@ class FrontmatterDecoratorSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Backlinks Pane")
-			.setDesc("Apply styles in the Backlinks pane")
+			.setName("Backlinks pane")
+			.setDesc("Apply styles in the backlinks pane")
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.enableBacklinks)
@@ -1263,7 +1258,7 @@ class FrontmatterDecoratorSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Editor Links")
+			.setName("Editor links")
 			.setDesc("Apply styles to internal links in the editor")
 			.addToggle((toggle) =>
 				toggle

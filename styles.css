@@ -1,5 +1,10 @@
 /* Frontmatter Decorator Plugin Styles */
 
+/* Color styling via CSS custom property */
+.has-frontmatter-color {
+	color: var(--frontmatter-color);
+}
+
 /* Icon container styling */
 .frontmatter-icon {
 	display: inline-flex;
@@ -61,7 +66,7 @@
 }
 
 /* Editor link styling - ensure color applies to the link itself */
-.cm-hmd-internal-link[style*="color"],
-.internal-link[style*="color"] {
+.cm-hmd-internal-link.has-frontmatter-color,
+.internal-link.has-frontmatter-color {
 	text-decoration-color: currentColor;
 }
