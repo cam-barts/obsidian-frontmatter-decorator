@@ -50,19 +50,18 @@ jobs:
           fi
 
           # Determine bump type based on conventional commits
+          # Always bump at least patch on every push to main
           if echo "$COMMITS" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!:"; then
             echo "bump=major" >> $GITHUB_OUTPUT
           elif echo "$COMMITS" | grep -qE "^feat(\(.+\))?:"; then
             echo "bump=minor" >> $GITHUB_OUTPUT
-          elif echo "$COMMITS" | grep -qE "^fix(\(.+\))?:"; then
-            echo "bump=patch" >> $GITHUB_OUTPUT
           else
-            echo "bump=none" >> $GITHUB_OUTPUT
+            # Default to patch bump for any other commits
+            echo "bump=patch" >> $GITHUB_OUTPUT
           fi
 
       - name: Calculate new version
         id: new_version
-        if: steps.bump_type.outputs.bump != 'none'
         run: |
           CURRENT="${{ steps.current_version.outputs.version }}"
           BUMP="${{ steps.bump_type.outputs.bump }}"
@@ -88,7 +87,6 @@ jobs:
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Update version files
-        if: steps.bump_type.outputs.bump != 'none'
         run: |
           NEW_VERSION="${{ steps.new_version.outputs.version }}"
           MIN_APP_VERSION=$(node -p "require('./manifest.json').minAppVersion")
@@ -118,11 +116,9 @@ jobs:
           "
 
       - name: Build plugin
-        if: steps.bump_type.outputs.bump != 'none'
         run: npm run build
 
       - name: Commit version bump
-        if: steps.bump_type.outputs.bump != 'none'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -131,7 +127,6 @@ jobs:
 
       - name: Generate changelog
         id: changelog
-        if: steps.bump_type.outputs.bump != 'none'
         run: |
           # Get the previous tag
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
@@ -148,17 +143,14 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create tag
-        if: steps.bump_type.outputs.bump != 'none'
         run: |
           git tag ${{ steps.new_version.outputs.version }}
 
       - name: Push commit and tag
-        if: steps.bump_type.outputs.bump != 'none'
         run: |
           git push origin main --follow-tags
 
       - name: Create GitHub Release
-        if: steps.bump_type.outputs.bump != 'none'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.new_version.outputs.version }}
