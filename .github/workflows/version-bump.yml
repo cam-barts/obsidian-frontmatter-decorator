@@ -1,0 +1,190 @@
+name: Version Bump
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - ".github/**"
+
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    # Skip if this is already a version bump commit
+    if: "!contains(github.event.head_commit.message, 'chore(release):')"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./manifest.json').version")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Determine version bump
+        id: bump_type
+        run: |
+          # Get commits since last tag or all commits if no tags
+          if git describe --tags --abbrev=0 2>/dev/null; then
+            LAST_TAG=$(git describe --tags --abbrev=0)
+            COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"%s")
+          else
+            COMMITS=$(git log --pretty=format:"%s")
+          fi
+
+          # Determine bump type based on conventional commits
+          if echo "$COMMITS" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!:"; then
+            echo "bump=major" >> $GITHUB_OUTPUT
+          elif echo "$COMMITS" | grep -qE "^feat(\(.+\))?:"; then
+            echo "bump=minor" >> $GITHUB_OUTPUT
+          elif echo "$COMMITS" | grep -qE "^fix(\(.+\))?:"; then
+            echo "bump=patch" >> $GITHUB_OUTPUT
+          else
+            echo "bump=none" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Calculate new version
+        id: new_version
+        if: steps.bump_type.outputs.bump != 'none'
+        run: |
+          CURRENT="${{ steps.current_version.outputs.version }}"
+          BUMP="${{ steps.bump_type.outputs.bump }}"
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          case $BUMP in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update version files
+        if: steps.bump_type.outputs.bump != 'none'
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          MIN_APP_VERSION=$(node -p "require('./manifest.json').minAppVersion")
+
+          # Update manifest.json
+          node -e "
+            const fs = require('fs');
+            const manifest = require('./manifest.json');
+            manifest.version = '$NEW_VERSION';
+            fs.writeFileSync('./manifest.json', JSON.stringify(manifest, null, '\t') + '\n');
+          "
+
+          # Update package.json
+          node -e "
+            const fs = require('fs');
+            const pkg = require('./package.json');
+            pkg.version = '$NEW_VERSION';
+            fs.writeFileSync('./package.json', JSON.stringify(pkg, null, '\t') + '\n');
+          "
+
+          # Update versions.json
+          node -e "
+            const fs = require('fs');
+            const versions = require('./versions.json');
+            versions['$NEW_VERSION'] = '$MIN_APP_VERSION';
+            fs.writeFileSync('./versions.json', JSON.stringify(versions, null, '\t') + '\n');
+          "
+
+      - name: Build plugin
+        if: steps.bump_type.outputs.bump != 'none'
+        run: npm run build
+
+      - name: Commit version bump
+        if: steps.bump_type.outputs.bump != 'none'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add manifest.json package.json versions.json
+          git commit -m "chore(release): bump version to ${{ steps.new_version.outputs.version }}"
+
+      - name: Generate changelog
+        id: changelog
+        if: steps.bump_type.outputs.bump != 'none'
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s" --no-merges | grep -E "^- (feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)" || echo "- Various improvements and fixes")
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s" --no-merges | head -20 | grep -E "^- (feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)" || echo "- Initial release")
+          fi
+
+          # Handle multi-line output for GitHub Actions
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        if: steps.bump_type.outputs.bump != 'none'
+        run: |
+          git tag ${{ steps.new_version.outputs.version }}
+
+      - name: Push commit and tag
+        if: steps.bump_type.outputs.bump != 'none'
+        run: |
+          git push origin main --follow-tags
+
+      - name: Create GitHub Release
+        if: steps.bump_type.outputs.bump != 'none'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.new_version.outputs.version }}
+          name: v${{ steps.new_version.outputs.version }}
+          body: |
+            ## Changes
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Installation
+
+            ### Using BRAT
+            1. Install the BRAT plugin
+            2. Add `cam-barts/obsidian-frontmatter-decorator` as a beta plugin
+
+            ### Manual Installation
+            1. Download `main.js`, `manifest.json`, and `styles.css` from this release
+            2. Create a folder called `frontmatter-decorator` in your vault's `.obsidian/plugins/` directory
+            3. Copy the downloaded files into this folder
+            4. Reload Obsidian and enable the plugin
+
+          files: |
+            main.js
+            manifest.json
+            styles.css
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

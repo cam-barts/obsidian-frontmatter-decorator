@@ -1,0 +1,67 @@
+/* Frontmatter Decorator Plugin Styles */
+
+/* Icon container styling */
+.frontmatter-icon {
+	display: inline-flex;
+	align-items: center;
+	margin-right: 4px;
+	vertical-align: middle;
+	flex-shrink: 0;
+}
+
+.frontmatter-icon svg {
+	width: var(--icon-size, 16px);
+	height: var(--icon-size, 16px);
+}
+
+/* File Explorer specific styles */
+.nav-file-title .frontmatter-icon,
+.tree-item-self .frontmatter-icon {
+	flex-shrink: 0;
+}
+
+/* Ensure styled elements don't break layout */
+.nav-file-title-content,
+.tree-item-inner {
+	display: inline-flex;
+	align-items: center;
+}
+
+/* Tab header icon styling */
+.workspace-tab-header .frontmatter-icon {
+	margin-right: 2px;
+}
+
+/* Quick Switcher / Prompt styling */
+.prompt .suggestion-title {
+	display: inline-flex;
+	align-items: center;
+	flex-wrap: nowrap;
+}
+
+.prompt .frontmatter-icon {
+	margin-right: 6px;
+	flex-shrink: 0;
+}
+
+/* Suggestion/Link suggester styling - only style the title, not the container */
+.suggestion-container .suggestion-title {
+	display: inline-flex;
+	align-items: center;
+}
+
+.suggestion-item .frontmatter-icon {
+	margin-right: 6px;
+	flex-shrink: 0;
+}
+
+/* Backlinks pane styling */
+.backlink-pane .frontmatter-icon {
+	margin-right: 4px;
+}
+
+/* Editor link styling - ensure color applies to the link itself */
+.cm-hmd-internal-link[style*="color"],
+.internal-link[style*="color"] {
+	text-decoration-color: currentColor;
+}

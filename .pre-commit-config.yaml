@@ -1,0 +1,31 @@
+repos:
+  # Built-in hooks from prek
+  - repo: builtin
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v1.17.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+  # ESLint for TypeScript/JavaScript
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        entry: npx eslint --fix
+        language: system
+        types: [ts, tsx, javascript, jsx]
+        pass_filenames: true
+
+      # rumdl for Markdown linting
+      - id: rumdl
+        name: rumdl
+        entry: uvx rumdl check --fix
+        language: system
+        types: [markdown]
+        pass_filenames: true

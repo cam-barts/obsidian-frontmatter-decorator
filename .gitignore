@@ -1,0 +1,25 @@
+# Build output
+main.js
+*.js.map
+
+# npm
+node_modules
+
+# IDE
+.idea
+*.iml
+.vscode
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Obsidian
+data.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# ESLint
+.eslintcache
