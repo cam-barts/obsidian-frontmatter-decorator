@@ -1,7 +1,7 @@
 {
 	"id": "frontmatter-decorator",
 	"name": "Frontmatter Decorator",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"minAppVersion": "1.4.0",
 	"description": "Decorate files with colors and icons based on frontmatter properties throughout Obsidian.",
 	"author": "cam-barts",
