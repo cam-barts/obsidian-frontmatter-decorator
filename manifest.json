@@ -1,7 +1,7 @@
 {
 	"id": "frontmatter-decorator",
 	"name": "Frontmatter Decorator",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"minAppVersion": "1.4.0",
 	"description": "Apply colors and icons from frontmatter properties.",
 	"author": "cam-barts",
