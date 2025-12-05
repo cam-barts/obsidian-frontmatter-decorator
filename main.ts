@@ -8,6 +8,22 @@ import {
 } from "obsidian";
 
 // ============================================================================
+// External Plugin Interfaces
+// ============================================================================
+
+/**
+ * Interface for Notebook Navigator plugin API
+ * This describes only the parts of the API we actually use
+ */
+interface NotebookNavigatorPlugin {
+	externalIconController?: {
+		iconService?: {
+			renderIcon?: (container: HTMLElement, iconId: string) => void;
+		};
+	};
+}
+
+// ============================================================================
 // Settings
 // ============================================================================
 
@@ -118,7 +134,7 @@ class FileStyleCache {
 class StyleApplicator {
 	private plugin: FrontmatterDecoratorPlugin;
 	private styledElements: WeakSet<HTMLElement> = new WeakSet();
-	private notebookNavigator: any = null;
+	private notebookNavigator: NotebookNavigatorPlugin | null = null;
 	private nnChecked = false;
 
 	constructor(plugin: FrontmatterDecoratorPlugin) {
@@ -128,15 +144,16 @@ class StyleApplicator {
 	/**
 	 * Get Notebook Navigator plugin instance
 	 */
-	private getNotebookNavigator(): any {
+	private getNotebookNavigator(): NotebookNavigatorPlugin | null {
 		if (this.nnChecked) {
 			return this.notebookNavigator;
 		}
 
 		this.nnChecked = true;
 		// Access plugins via type assertion (not in official typings)
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const plugins = (this.plugin.app as any).plugins?.plugins;
-		const nn = plugins?.["notebook-navigator"];
+		const nn = plugins?.["notebook-navigator"] as NotebookNavigatorPlugin | undefined;
 		if (nn) {
 			this.notebookNavigator = nn;
 		}
@@ -188,14 +205,19 @@ class StyleApplicator {
 	 */
 	private applyIcon(element: HTMLElement, iconId: string): void {
 		// Check if icon container already exists
-		let iconContainer = element.querySelector(
+		const existingContainer = element.querySelector(
 			".frontmatter-icon"
-		) as HTMLElement | null;
+		);
 
-		if (!iconContainer) {
+		let iconContainer: HTMLElement;
+		if (!existingContainer) {
 			iconContainer = document.createElement("span");
 			iconContainer.classList.add("frontmatter-icon");
 			element.insertBefore(iconContainer, element.firstChild);
+		} else if (existingContainer instanceof HTMLElement) {
+			iconContainer = existingContainer;
+		} else {
+			return;
 		}
 
 		// Clear existing icon
@@ -220,7 +242,7 @@ class StyleApplicator {
 	/**
 	 * Try to apply icon using Notebook Navigator's icon provider
 	 */
-	private applyIconWithNotebookNavigator(container: HTMLElement, iconId: string, nn: any): boolean {
+	private applyIconWithNotebookNavigator(container: HTMLElement, iconId: string, nn: NotebookNavigatorPlugin): boolean {
 		try {
 			// Normalize the icon ID for Notebook Navigator
 			const normalizedIconId = this.normalizeIconIdForNN(iconId);
@@ -595,8 +617,8 @@ class SuggesterObserver extends DOMObserver {
 		}
 
 		// Find the title element - this is where we'll apply styles
-		const titleEl = suggestion.querySelector(".suggestion-title") as HTMLElement | null;
-		if (!titleEl) return;
+		const titleEl = suggestion.querySelector(".suggestion-title");
+		if (!(titleEl instanceof HTMLElement)) return;
 
 		let filePath: string | null = null;
 
@@ -1159,7 +1181,7 @@ class FrontmatterDecoratorSettingTab extends PluginSettingTab {
 			.setDesc("The frontmatter field name to use for colors")
 			.addText((text) =>
 				text
-					.setPlaceholder("color")
+					.setPlaceholder("Color")
 					.setValue(this.plugin.settings.colorField)
 					.onChange(async (value) => {
 						this.plugin.settings.colorField = value || "color";
@@ -1172,7 +1194,7 @@ class FrontmatterDecoratorSettingTab extends PluginSettingTab {
 			.setDesc("The frontmatter field name to use for icons")
 			.addText((text) =>
 				text
-					.setPlaceholder("icon")
+					.setPlaceholder("Icon")
 					.setValue(this.plugin.settings.iconField)
 					.onChange(async (value) => {
 						this.plugin.settings.iconField = value || "icon";
@@ -1247,7 +1269,7 @@ class FrontmatterDecoratorSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Bases")
-			.setDesc("Apply styles to file references in Obsidian Bases views")
+			.setDesc("Apply styles to file references in Bases views")
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.enableBases)
