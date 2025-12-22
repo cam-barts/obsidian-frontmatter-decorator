@@ -184,6 +184,31 @@ class StyleApplicator {
 	}
 
 	/**
+	 * Apply ONLY color styling (no icons) - used for quick switcher to avoid layout issues
+	 */
+	applyStyleColorOnly(element: HTMLElement, filePath: string): void {
+		const style = this.plugin.styleCache.getStyle(filePath);
+
+		// Note: Color styling in quick switcher is currently disabled
+		// Icons are also disabled to prevent layout issues with Obsidian's suggestion-highlight spans
+		// This prevents text from becoming jumbled when search terms are highlighted
+
+		// Color application code commented out as it doesn't work reliably in quick switcher
+		// if (style.color) {
+		// 	const currentColor = element.dataset.frontmatterColor;
+		// 	if (currentColor !== style.color) {
+		// 		element.style.color = style.color + ' !important';
+		// 		element.dataset.frontmatterColor = style.color;
+		// 		const childSpans = element.querySelectorAll('span');
+		// 		childSpans.forEach((span: HTMLElement) => {
+		// 			span.style.color = style.color + ' !important';
+		// 		});
+		// 	}
+		// 	this.styledElements.add(element);
+		// }
+	}
+
+	/**
 	 * Remove applied styles from an element
 	 */
 	removeStyle(element: HTMLElement): void {
@@ -541,6 +566,17 @@ class SuggesterObserver extends DOMObserver {
 							this.checkForSuggestions(node);
 						}
 					});
+				} else if (mutation.type === "characterData") {
+					// Text content changed - re-style parent suggestion item if found
+					const suggestionItem = (mutation.target as Node).parentElement?.closest('.suggestion-item');
+					if (suggestionItem instanceof HTMLElement) {
+						// Clear the styled marker to force re-styling
+						const titleEl = suggestionItem.querySelector('.suggestion-title');
+						if (titleEl instanceof HTMLElement) {
+							delete titleEl.dataset.frontmatterStyledFor;
+						}
+						this.styleSuggestionItem(suggestionItem);
+					}
 				}
 			}
 		});
@@ -548,6 +584,7 @@ class SuggesterObserver extends DOMObserver {
 		this.observer.observe(document.body, {
 			childList: true,
 			subtree: true,
+			characterData: true,  // Watch for text content changes
 		});
 	}
 
@@ -613,7 +650,9 @@ class SuggesterObserver extends DOMObserver {
 	private styleSuggestionItem(suggestion: HTMLElement): void {
 		// Find the title element - this is where we'll apply styles
 		const titleEl = suggestion.querySelector(".suggestion-title");
-		if (!(titleEl instanceof HTMLElement)) return;
+		if (!(titleEl instanceof HTMLElement)) {
+			return;
+		}
 
 		let filePath: string | null = null;
 		let pathIdentifier: string | null = null;
@@ -626,15 +665,8 @@ class SuggesterObserver extends DOMObserver {
 		// Built-in Quick Switcher: .suggestion-title contains the path directly
 		// e.g., "_/Task List" or "Projects/Other/Books To Read"
 		else {
-			// Get the text content, excluding any icon elements we may have added
-			const iconEl = titleEl.querySelector(".frontmatter-icon");
-			const titleText = iconEl
-				? Array.from(titleEl.childNodes)
-					.filter((node) => node !== iconEl && node.nodeType === Node.TEXT_NODE)
-					.map((node) => node.textContent)
-					.join("")
-					.trim()
-				: titleEl.textContent?.trim() || "";
+			// Get the text content directly (no icon elements since we don't add them in quick switcher)
+			const titleText = titleEl.textContent?.trim() || "";
 
 			if (titleText) {
 				pathIdentifier = titleText;
@@ -666,28 +698,17 @@ class SuggesterObserver extends DOMObserver {
 			return;
 		}
 
-		// Get the expected style for this file
-		const style = this.plugin.styleCache.getStyle(filePath);
-
-		// Check if icon container exists (might have been removed by Obsidian)
-		const hasIconContainer = titleEl.querySelector(".frontmatter-icon") !== null;
-		const needsIcon = style.icon !== null;
-
-		// Skip only if fully styled (data attribute matches AND icon state is correct)
+		// Skip if already styled for this path
 		if (titleEl.dataset.frontmatterStyledFor === pathIdentifier) {
-			// If we need an icon but don't have one, re-apply
-			if (needsIcon && !hasIconContainer) {
-				// Icon was removed, need to re-apply
-			} else {
-				return;
-			}
+			return;
 		}
 
 		// Mark as styled for this specific path
 		titleEl.dataset.frontmatterStyledFor = pathIdentifier;
 
-		// Apply full styling (color + icon) to the title element
-		this.plugin.styleApplicator.applyStyle(titleEl, filePath);
+		// Apply ONLY color styling (no icons) - only updates if color changed
+		// Note: Currently disabled - see applyStyleColorOnly method
+		this.plugin.styleApplicator.applyStyleColorOnly(titleEl, filePath);
 	}
 }
 

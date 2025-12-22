@@ -2,7 +2,22 @@
 
 /* Color styling via CSS custom property */
 .has-frontmatter-color {
-	color: var(--frontmatter-color);
+	color: var(--frontmatter-color) !important;
+}
+
+/* Ensure highlighted text in quick switcher also gets the frontmatter color */
+/* Obsidian's .suggestion-highlight has its own styling that needs to be overridden */
+.has-frontmatter-color .suggestion-highlight {
+	color: var(--frontmatter-color) !important;
+}
+
+/* More specific selectors for suggestion items */
+.suggestion-title.has-frontmatter-color {
+	color: var(--frontmatter-color) !important;
+}
+
+.suggestion-title.has-frontmatter-color .suggestion-highlight {
+	color: var(--frontmatter-color) !important;
 }
 
 /* Icon container styling */
@@ -38,27 +53,12 @@
 }
 
 /* Quick Switcher / Prompt styling */
-.prompt .suggestion-title {
-	display: inline-flex;
-	align-items: center;
-	flex-wrap: nowrap;
-}
+/* NOTE: Removed inline-flex since we're not inserting icons in quick switcher */
+/* The default inline display allows Obsidian's suggestion-highlight to work correctly */
 
-.prompt .frontmatter-icon {
-	margin-right: 6px;
-	flex-shrink: 0;
-}
-
-/* Suggestion/Link suggester styling - only style the title, not the container */
-.suggestion-container .suggestion-title {
-	display: inline-flex;
-	align-items: center;
-}
-
-.suggestion-item .frontmatter-icon {
-	margin-right: 6px;
-	flex-shrink: 0;
-}
+/* Suggestion/Link suggester styling */
+/* NOTE: Removed inline-flex since we're not inserting icons in quick switcher */
+/* The default inline display allows Obsidian's suggestion-highlight to work correctly */
 
 /* Backlinks pane styling */
 .backlink-pane .frontmatter-icon {
