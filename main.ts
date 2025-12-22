@@ -186,14 +186,13 @@ class StyleApplicator {
 	/**
 	 * Apply ONLY color styling (no icons) - used for quick switcher to avoid layout issues
 	 */
-	applyStyleColorOnly(element: HTMLElement, filePath: string): void {
-		const style = this.plugin.styleCache.getStyle(filePath);
-
+	applyStyleColorOnly(_element: HTMLElement, _filePath: string): void {
 		// Note: Color styling in quick switcher is currently disabled
 		// Icons are also disabled to prevent layout issues with Obsidian's suggestion-highlight spans
 		// This prevents text from becoming jumbled when search terms are highlighted
 
 		// Color application code commented out as it doesn't work reliably in quick switcher
+		// const style = this.plugin.styleCache.getStyle(filePath);
 		// if (style.color) {
 		// 	const currentColor = element.dataset.frontmatterColor;
 		// 	if (currentColor !== style.color) {
@@ -568,7 +567,7 @@ class SuggesterObserver extends DOMObserver {
 					});
 				} else if (mutation.type === "characterData") {
 					// Text content changed - re-style parent suggestion item if found
-					const suggestionItem = (mutation.target as Node).parentElement?.closest('.suggestion-item');
+					const suggestionItem = mutation.target.parentElement?.closest('.suggestion-item');
 					if (suggestionItem instanceof HTMLElement) {
 						// Clear the styled marker to force re-styling
 						const titleEl = suggestionItem.querySelector('.suggestion-title');
