@@ -611,55 +611,83 @@ class SuggesterObserver extends DOMObserver {
 	}
 
 	private styleSuggestionItem(suggestion: HTMLElement): void {
-		// Skip if already styled
-		if (suggestion.dataset.frontmatterStyled === "true") {
-			return;
-		}
-
 		// Find the title element - this is where we'll apply styles
 		const titleEl = suggestion.querySelector(".suggestion-title");
 		if (!(titleEl instanceof HTMLElement)) return;
 
 		let filePath: string | null = null;
+		let pathIdentifier: string | null = null;
 
 		// Try data-path attribute first (most reliable if present)
 		if (suggestion.dataset.path) {
 			filePath = suggestion.dataset.path;
+			pathIdentifier = suggestion.dataset.path;
 		}
 		// Built-in Quick Switcher: .suggestion-title contains the path directly
 		// e.g., "_/Task List" or "Projects/Other/Books To Read"
-		else if (titleEl.textContent) {
-			const titleText = titleEl.textContent.trim();
+		else {
+			// Get the text content, excluding any icon elements we may have added
+			const iconEl = titleEl.querySelector(".frontmatter-icon");
+			const titleText = iconEl
+				? Array.from(titleEl.childNodes)
+					.filter((node) => node !== iconEl && node.nodeType === Node.TEXT_NODE)
+					.map((node) => node.textContent)
+					.join("")
+					.trim()
+				: titleEl.textContent?.trim() || "";
 
-			// The title often IS the path (without .md extension)
-			let possiblePath = titleText;
-			if (!possiblePath.endsWith(".md")) {
-				possiblePath = possiblePath + ".md";
-			}
+			if (titleText) {
+				pathIdentifier = titleText;
 
-			// Verify this file exists
-			const file = this.plugin.app.vault.getAbstractFileByPath(possiblePath);
-			if (file instanceof TFile) {
-				filePath = file.path;
-			} else {
-				// Try to find by basename if full path didn't work
-				const files = this.plugin.app.vault.getMarkdownFiles();
-				const matchingFile = files.find(
-					(f) => f.basename === titleText || f.path === possiblePath
-				);
-				if (matchingFile) {
-					filePath = matchingFile.path;
+				// The title often IS the path (without .md extension)
+				let possiblePath = titleText;
+				if (!possiblePath.endsWith(".md")) {
+					possiblePath = possiblePath + ".md";
+				}
+
+				// Verify this file exists
+				const file = this.plugin.app.vault.getAbstractFileByPath(possiblePath);
+				if (file instanceof TFile) {
+					filePath = file.path;
+				} else {
+					// Try to find by basename if full path didn't work
+					const files = this.plugin.app.vault.getMarkdownFiles();
+					const matchingFile = files.find(
+						(f) => f.basename === titleText || f.path === possiblePath
+					);
+					if (matchingFile) {
+						filePath = matchingFile.path;
+					}
 				}
 			}
 		}
 
-		if (filePath) {
-			// Mark as styled to avoid duplicate processing
-			suggestion.dataset.frontmatterStyled = "true";
-
-			// Apply full styling (color + icon) to the title element
-			this.plugin.styleApplicator.applyStyle(titleEl, filePath);
+		if (!filePath || !pathIdentifier) {
+			return;
 		}
+
+		// Get the expected style for this file
+		const style = this.plugin.styleCache.getStyle(filePath);
+
+		// Check if icon container exists (might have been removed by Obsidian)
+		const hasIconContainer = titleEl.querySelector(".frontmatter-icon") !== null;
+		const needsIcon = style.icon !== null;
+
+		// Skip only if fully styled (data attribute matches AND icon state is correct)
+		if (titleEl.dataset.frontmatterStyledFor === pathIdentifier) {
+			// If we need an icon but don't have one, re-apply
+			if (needsIcon && !hasIconContainer) {
+				// Icon was removed, need to re-apply
+			} else {
+				return;
+			}
+		}
+
+		// Mark as styled for this specific path
+		titleEl.dataset.frontmatterStyledFor = pathIdentifier;
+
+		// Apply full styling (color + icon) to the title element
+		this.plugin.styleApplicator.applyStyle(titleEl, filePath);
 	}
 }
 
