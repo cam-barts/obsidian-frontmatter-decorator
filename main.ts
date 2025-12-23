@@ -23,6 +23,16 @@ interface NotebookNavigatorPlugin {
 	};
 }
 
+/**
+ * Extended App interface with plugins property
+ * The plugins property is not in the official typings but exists at runtime
+ */
+interface AppWithPlugins extends App {
+	plugins?: {
+		plugins?: Record<string, Plugin>;
+	};
+}
+
 // ============================================================================
 // Settings
 // ============================================================================
@@ -150,9 +160,8 @@ class StyleApplicator {
 		}
 
 		this.nnChecked = true;
-		// Access plugins via type assertion (not in official typings)
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const plugins = (this.plugin.app as any).plugins?.plugins;
+		// Access plugins via extended interface (plugins property not in official typings but exists at runtime)
+		const plugins = (this.plugin.app as AppWithPlugins).plugins?.plugins;
 		const nn = plugins?.["notebook-navigator"] as NotebookNavigatorPlugin | undefined;
 		if (nn) {
 			this.notebookNavigator = nn;
@@ -1317,7 +1326,7 @@ class FrontmatterDecoratorSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Bases")
-			.setDesc("Apply styles to file references in Bases views")
+			.setDesc("Apply styles to file references in bases views")
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.enableBases)
